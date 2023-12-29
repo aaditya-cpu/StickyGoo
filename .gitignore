@@ -1,0 +1,12 @@
+# Ignore Python virtual environments
+sticky_goo/
+*.pyc
+
+# Ignore CSV files
+*.csv
+
+# Ignore log files
+*.log
+
+# Ignore HTML files (if desired)
+*.html

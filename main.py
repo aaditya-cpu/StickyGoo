@@ -17,10 +17,10 @@ base_url = "http://eschoolapp.in/sample-reports?crmid="
 # Function to generate QR code images as base64 encoded strings
 def generate_qr_code(url, logo_path):
     qr = qrcode.QRCode(
-        version=1,
+        version=1,  # Adjust as needed to fit your data
         error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=4,
+        box_size=6,  # Adjust based on trial and error for size
+        border=1,    # Border in boxes, not pixels
     )
     qr.add_data(url)
     qr.make(fit=True)
@@ -52,7 +52,7 @@ start_time = time.time()
 # Generate URLs and QR codes
 for index, row in df.iterrows():
     url = base_url + str(row['ID'])
-    df.at[index, 'URL'] = url  # Update URL in DataFrame
+    df.at[index, 'URL'] = url
     qr_code = generate_qr_code(url, logo_path)
     df.at[index, 'QR Code'] = qr_code
     logging.info(f"QR code generated for ID: {row['ID']}")

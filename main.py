@@ -1,39 +1,42 @@
 import pandas as pd
 import qrcode
-from io import BytesIO
-import base64  
 import time
 import logging
-from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
-from qrcode.image.styles.colormasks import SolidFillColorMask
-from qrcode.image.styledpil import StyledPilImage
-from qrcode.image.svg import SvgImage
-import xml.etree.ElementTree as ET 
-
 from bs4 import BeautifulSoup
-# Setup basic logging# Setup basic logging
-logging.basicConfig(level=logging.INFO)
+from qrcode.image.svg import SvgPathImage
+from xml.etree import ElementTree
+
+# Setup basic logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Sample base URL - replace with your actual base URL
 base_url = "http://eschoolapp.in/sample-reports?crmid="
 
-# Function to generate SVG QR code images as text
-def generate_qr_code_svg(url):
+# Function to generate SVG QR code images
+def generate_qr_code_svg(url, method='path'):
+    logging.info(f"Generating QR code for URL: {url}")
+    if method == 'basic':
+        factory = qrcode.image.svg.SvgImage
+    elif method == 'fragment':
+        factory = qrcode.image.svg.SvgFragmentImage
+    else:  # 'path' or any other value
+        factory = qrcode.image.svg.SvgPathImage
+
     qr = qrcode.QRCode(
         version=1,  # Adjust as needed to fit your data
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,  # Adjust based on your desired size
-        border=4,    # Border in boxes, not pixels
+        border=4,     # Border in boxes, not pixels
     )
     qr.add_data(url)
     qr.make(fit=True)
 
-    # Create an SvgImage with a white background
-    img = qr.make_image(image_factory=SvgImage, module_drawer=None, background="#FFFFFF")
+    img = qr.make_image(image_factory=factory)
 
-    # Get the SVG code as text
-    svg_text = ET.tostring(img.get_image(), encoding="unicode")
-    return svg_text
+    # Convert the SVG image object to a string
+    img_buffer = ElementTree.tostring(img._img, encoding='unicode', method='xml')
+    logging.info("QR code generated successfully.")
+    return img_buffer
 
 # Read CSV file
 path = 'deta.csv'
@@ -44,48 +47,58 @@ start_time = time.time()
 
 # Load the HTML template
 with open("index.html", "r") as template_file:
-    template_content = template_file.read()
+    logging.info("Loading HTML template.")
+    template = template_file.read()
 
-# Create a BeautifulSoup object to parse the template
-soup = BeautifulSoup(template_content, 'html.parser')
+# Initialize a variable to hold the combined HTML content
+combined_html = ""
 
-# Find the table where you want to add QR codes and lawyer names
-table = soup.find('table')
 
-# Create a new HTML file for output
-with open("qrcode.html", "w") as output_file:
-    # Iterate through each row in the CSV
-    for index, row in df.iterrows():
+# Iterate through each row in the CSV
+for index, row in df.iterrows():
+
+        soup = BeautifulSoup(template, 'html.parser')
+
         url = base_url + str(row['ID'])
         qr_code_svg = generate_qr_code_svg(url)
+
         lawyer_name = row['Lawyer Name']
 
-        # Clone the entire template for each row
-        row_template = BeautifulSoup(str(table), 'html.parser')
+        # Replace placeholders
+        logging.info(f"Replacing placeholders for record {index + 1}.")
+        for td in soup.find_all('td'):
+            if '{qr_code}' in str(td):
+                td.clear()
+                td.append(BeautifulSoup(qr_code_svg, 'html.parser'))
+            elif '{lawyer_name}' in str(td):
+                td.clear()
+                td.append(lawyer_name)
 
-        # Replace the placeholders with the SVG QR code and lawyer name
-        placeholders = row_template.find_all(string=True)
-        for placeholder in placeholders:
-            if "{qr_code}" in placeholder:
-                placeholder.replace_with(qr_code_svg)
-            elif "{lawyer_name}" in placeholder:
-                placeholder.replace_with(lawyer_name)
+        combined_html += str(soup)
+        
 
-        # Append the modified row_template to the main table
-        table.append(row_template)
+# Write the combined HTML to a single output file
+with open("combined_output.html", "w") as output_file:
+    logging.info("Writing combined HTML to file.")
+    output_file.write(combined_html)
 
-        # Log progress for each row
-        logging.info(f"Processed row {index + 1} - Lawyer Name: {lawyer_name}, QR Code URL: {url}")
+import pdfkit
 
-        # Save the modified HTML to the output file after processing each row
-        output_file.write(str(soup))
+options = {
+    'javascript-delay': 1000,  # Wait for 1000 milliseconds (1 second)
+    'enable-local-file-access': True  # Allow access to local files
+}
 
-# Log completion
-logging.info("HTML file with SVG QR codes generated.")
+# Convert HTML to PDF
+try:
+    pdfkit.from_file('combined_output.html', 'combined_output.pdf', options=options)
+    print("PDF created successfully.")
+except Exception as e:
+    print(f"Error during PDF creation: {e}")
 
-# Measure end time
+# Measure end time and log completion
+
 end_time = time.time()
 time_taken = end_time - start_time
-logging.info(f"Total time taken: {time_taken} seconds")
-
 print(f"Total time taken: {time_taken} seconds")
+logging.info(f"Consolidated HTML file with QR codes generated. Total time taken: {time_taken} seconds")

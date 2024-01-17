@@ -52,29 +52,58 @@ with open("index.html", "r") as template_file:
 
 # Initialize a variable to hold the combined HTML content
 combined_html = ""
-
-
 # Iterate through each row in the CSV
 for index, row in df.iterrows():
+    soup = BeautifulSoup(template, 'html.parser')
 
-        soup = BeautifulSoup(template, 'html.parser')
+    url = base_url + str(row['ID'])
+    qr_code_svg = generate_qr_code_svg(url)
 
-        url = base_url + str(row['ID'])
-        qr_code_svg = generate_qr_code_svg(url)
+    lawyer_name = row['Lawyer Name']
 
-        lawyer_name = row['Lawyer Name']
+    # Replace placeholders
+    logging.info(f"Replacing placeholders for record {index + 1}.")
+    for td in soup.find_all('td'):
+        if '{qr_code}' in str(td):
+            td.clear()
+            td.append(BeautifulSoup(qr_code_svg, 'html.parser'))
+        elif '{lawyer_name}' in str(td):
+            td.clear()
+            td.append(lawyer_name)
+            additional_text = """
+            <p class="mort" style="color: #3a3401; font-weight: normal; font-style: normal; font-size: 12px;">Scan me to View Sample Reports</p>
+            <p class="mort" style="color: #3a3401; font-weight: normal; font-style: normal; font-size: 12px;">Link: eschoolapp.in/sample</p>
+            """
+            td.append(BeautifulSoup(additional_text, 'html.parser'))
 
-        # Replace placeholders
-        logging.info(f"Replacing placeholders for record {index + 1}.")
-        for td in soup.find_all('td'):
-            if '{qr_code}' in str(td):
-                td.clear()
-                td.append(BeautifulSoup(qr_code_svg, 'html.parser'))
-            elif '{lawyer_name}' in str(td):
-                td.clear()
-                td.append(lawyer_name)
+    combined_html += str(soup)
 
-        combined_html += str(soup)
+# # Iterate through each row in the CSV
+# for index, row in df.iterrows():
+
+#         soup = BeautifulSoup(template, 'html.parser')
+
+#         url = base_url + str(row['ID'])
+#         qr_code_svg = generate_qr_code_svg(url)
+
+#         lawyer_name = row['Lawyer Name']
+#         additional_text = ""
+#         # Replace placeholders
+#         logging.info(f"Replacing placeholders for record {index + 1}.")
+#         for td in soup.find_all('td'):
+#             if '{qr_code}' in str(td):
+#                 td.clear()
+#                 td.append(BeautifulSoup(qr_code_svg, 'html.parser'))
+#             elif '{lawyer_name}' in str(td):
+#                 td.clear()
+#                 td.append(lawyer_name)
+#                 additional_text = """
+#             <p class="mort"style="color: #3a3401; font-weight: normal; font-style: normal;font-size: 12px;">Scan me to View Sample Reports</p>
+#             <p class="mort"style="color: #3a3401; font-weight: normal; font-style: normal;font-size: 12px;">Link: eschoolapp.in/sample</p>
+#             """
+#             td.append(BeautifulSoup(additional_text, 'html.parser'))
+
+#         combined_html += str(soup)
         
 
 # Write the combined HTML to a single output file

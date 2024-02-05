@@ -8,5 +8,3 @@ sticky_goo/
 # Ignore log files
 *.log
 
-# Ignore HTML files (if desired)
-*.html

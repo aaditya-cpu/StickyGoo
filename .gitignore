@@ -3,7 +3,7 @@ sticky_goo/
 *.pyc
 
 # Ignore CSV files
-*.csv
+
 
 # Ignore log files
 *.log

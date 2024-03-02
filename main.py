@@ -39,7 +39,7 @@ def generate_qr_code_svg(url, method='path'):
     return img_buffer
 
 # Read CSV file
-path = 'sdaas.csv'
+path = 'additional prints.csv'
 df = pd.read_csv(path)
 
 # Start measuring time
@@ -107,7 +107,7 @@ for index, row in df.iterrows():
         
 
 # Write the combined HTML to a single output file
-with open("New_clients.html", "w") as output_file:
+with open("Additional.html", "w") as output_file:
     logging.info("Writing combined HTML to file.")
     output_file.write(combined_html)
 
@@ -120,7 +120,7 @@ options = {
 
 # Convert HTML to PDF
 try:
-    pdfkit.from_file('New_clients.html', 'New_clients.pdf', options=options)
+    pdfkit.from_file('Additional.html', 'Additional.pdf', options=options)
     print("PDF created successfully.")
 except Exception as e:
     print(f"Error during PDF creation: {e}")
